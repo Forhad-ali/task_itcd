@@ -1,0 +1,35 @@
+<h2>Tickets</h2>
+{% if user.role in "admin manager" %}
+<a href="{% url 'ticket_create' %}" class="btn btn-success mb-3">Create Ticket</a>
+{% endif %}
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Description</th>
+      <th>Status</th>
+      <th>Assigned To</th>
+      <th>Created By</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ticket in tickets %}
+    <tr>
+      <td>{{ ticket.title }}</td>
+      <td>{{ ticket.description }}</td>
+      <td>{{ ticket.status }}</td>
+      <td>{{ ticket.assigned_to }}</td>
+      <td>{{ ticket.created_by }}</td>
+      <td>
+        {% if user.role in "admin manager staff" %}
+        <a href="{% url 'ticket_update' ticket.id %}" class="btn btn-primary btn-sm">Edit</a>
+        {% endif %}
+        {% if user.role in "admin manager" %}
+        <a href="{% url 'ticket_delete' ticket.id %}" class="btn btn-danger btn-sm">Delete</a>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
