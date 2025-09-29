@@ -3,6 +3,14 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from .forms import RegisterForm, LoginForm
 from .decorators import role_required
+from .models import Ticket
+from .forms import TicketForm
+
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import CustomUser
+from .forms import UserCreateForm, UserUpdateForm
+from .decorators import role_required
+from django.contrib.auth.decorators import login_required
 
 def register_view(request):
     if request.method == "POST":
@@ -10,7 +18,7 @@ def register_view(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return redirect("dashboard")
+            return redirect("login")
     else:
         form = RegisterForm()
     return render(request, "ittask/register.html", {"form": form})
@@ -21,7 +29,7 @@ def login_view(request):
         if form.is_valid():
             user = form.get_user()
             login(request, user)
-            return redirect("dashboard")
+            return redirect("ticket_list")
     else:
         form = LoginForm()
     return render(request, "ittask/login.html", {"form": form})
@@ -30,39 +38,7 @@ def logout_view(request):
     logout(request)
     return redirect("login")
 
-@login_required
-def dashboard_view(request):
-    role = request.user.role
-    if role == "admin":
-        return redirect("admin_dashboard")
-    elif role == "manager":
-        return redirect("manager_dashboard")
-    elif role == "staff":
-        return redirect("staff_dashboard")
-    else:
-        return redirect("viewer_dashboard")
 
-# role dashboards
-@role_required(allowed_roles=['admin'])
-def admin_dashboard(request):
-    return render(request, "ittask/admin_dashboard.html")
-
-@role_required(allowed_roles=['manager', 'admin'])
-def manager_dashboard(request):
-    return render(request, "ittask/manager_dashboard.html")
-
-@role_required(allowed_roles=['staff', 'manager', 'admin'])
-def staff_dashboard(request):
-    return render(request, "ittask/staff_dashboard.html")
-
-@role_required(allowed_roles=['viewer', 'staff', 'manager', 'admin'])
-def viewer_dashboard(request):
-    return render(request, "ittask/viewer_dashboard.html")
-
-
-
-from .models import Ticket
-from .forms import TicketForm
 
 # List all tickets
 @login_required
@@ -109,3 +85,37 @@ def ticket_delete(request, ticket_id):
     ticket = Ticket.objects.get(id=ticket_id)
     ticket.delete()
     return redirect("ticket_list")
+
+
+
+
+# List users
+@role_required(['admin'])
+def user_list(request):
+    users = CustomUser.objects.all()
+    return render(request, "ittask/user_list.html", {"users": users})
+
+# Create user
+@role_required(['admin'])
+def user_create(request):
+    if request.method == "POST":
+        form = UserCreateForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect("user_list")
+    else:
+        form = UserCreateForm()
+    return render(request, "ittask/user_form.html", {"form": form, "title": "Create User"})
+
+# Update user
+@role_required(['admin'])
+def user_update(request, user_id):
+    user = get_object_or_404(CustomUser, id=user_id)
+    if request.method == "POST":
+        form = UserUpdateForm(request.POST, instance=user)
+        if form.is_valid():
+            form.save()
+            return redirect("user_list")
+    else:
+        form = UserUpdateForm(instance=user)
+    return render(request, "ittask/user_form.html", {"form": form, "title": "Update User"})
